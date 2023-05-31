@@ -6,9 +6,9 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow, QPlainTextE
 from PyQt5.QtGui import QColor, QPalette, QTextCursor
 from PyQt5.QtCore import Qt
 
-import wrap_gpt
+import gpt_wrapper
 
-importlib.reload(wrap_gpt)
+importlib.reload(gpt_wrapper)
 
 
 class AIAssistantUI(QMainWindow):
@@ -117,7 +117,7 @@ class AIAssistantUI(QMainWindow):
         self.prompt_input = QTextEdit()
         self.model_label = QLabel('GPT Model:')
         self.model_combo = QComboBox()
-        self.model_combo.addItems(wrap_gpt.ApplicationManager.get_list_models())
+        self.model_combo.addItems(gpt_wrapper.ApplicationManager.get_list_models())
 
         customize_layout.addWidget(self.personality_label)
         customize_layout.addWidget(self.personality_name_input)
@@ -135,7 +135,7 @@ class AIAssistantUI(QMainWindow):
 
     def update_personality_dropdown(self):
         self.personality_switch_combo.clear()
-        self.personality_switch_combo.addItems(wrap_gpt.ApplicationManager.get_entity_personality_names())
+        self.personality_switch_combo.addItems(gpt_wrapper.ApplicationManager.get_entity_personality_names())
 
     def switch_personality(self, index):
         selected_personality = self.personality_switch_combo.itemText(index)
@@ -144,19 +144,19 @@ class AIAssistantUI(QMainWindow):
 
     def update_chat_display(self):
         self.chat_display.clear()
-        self.chat_display.append(wrap_gpt.ApplicationManager.get_chat_history())
+        self.chat_display.append(gpt_wrapper.ApplicationManager.get_chat_history())
 
     def send_user_input(self):
         user_input = self.input_text.toPlainText()
-        wrap_gpt.ApplicationManager.user_ask_message('user', user_input)
+        gpt_wrapper.ApplicationManager.user_ask_message('user', user_input)
         self.update_chat_display()
         self.input_text.clear()
         self.chat_display.moveCursor(QTextCursor.End)  # Scroll to the bottom of the chat display
 
     def load_personality(self, personality_name):
-        personality = wrap_gpt.ApplicationManager.get_entity_personality_by_name(personality_name)
+        personality = gpt_wrapper.ApplicationManager.get_entity_personality_by_name(personality_name)
         print(f"Changed ai instance to: {personality['name']}")
-        wrap_gpt.ApplicationManager.chat_environment.ai_instances = [wrap_gpt.AIInstance(personality)]
+        gpt_wrapper.ApplicationManager.chat_environment.ai_instances = [gpt_wrapper.AIInstance(personality)]
 
 
 def main():    
@@ -167,7 +167,7 @@ def main():
     setup_dark_palette(app)
 
     # Create the main window
-    window = AIAssistantUI(wrap_gpt.ApplicationManager)
+    window = AIAssistantUI(gpt_wrapper.ApplicationManager)
     window.show()
 
     # Run the event loop

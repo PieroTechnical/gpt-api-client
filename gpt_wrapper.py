@@ -1,5 +1,6 @@
 
 import json
+import os
 import openai
 
 
@@ -42,8 +43,15 @@ class ApplicationManager:
 
     @staticmethod
     def get_entity_personality_names():
-        __class__.load_personality_archetypes_from_file('C:\\dev\\WrapGPT\\personality_archetypes.json')
+        __class__.load_personality_archetypes_from_file(ApplicationManager.get_personality_file())
         return list(__class__.entity_personality_archetypes.keys())
+
+    @staticmethod
+    def get_personality_file():
+        current_module_path = os.path.abspath(__file__)
+        current_module_directory = os.path.dirname(current_module_path)
+
+        return f'{current_module_directory}\\personality_archetypes.json'
     
     @staticmethod
     def get_entity_personality_by_name(name):
