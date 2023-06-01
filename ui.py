@@ -11,13 +11,21 @@ import gpt_wrapper
 importlib.reload(gpt_wrapper)
 
 
+DEFAULT_SCRIPT = '''personality = ApplicationManager.get_entity_personality_by_name("code_assistant")
+ai_instance = AIInstance(personality)
+chat_env = ChatEnvironment([ai_instance])
+message = 'test'
+chat_env.user_ask_message('user', message)
+print(chat_env.chat_history)'''
+
+
 class AIAssistantUI(QMainWindow):
     def __init__(self, application_manager):
         super().__init__()
         self.build_ui()
-
-#        self.update_personality_dropdown()
         self.update_chat_display()
+
+        application_manager.ui = self
 
     def build_ui(self):
         self.setWindowTitle('AI Assistant')
@@ -28,7 +36,6 @@ class AIAssistantUI(QMainWindow):
 
         self.build_chat_tab()
         self.build_script_tab()
-        self.build_customize_tab()
 
         self.connect_shortcuts()
 
@@ -60,6 +67,10 @@ class AIAssistantUI(QMainWindow):
         self.script_tab = QWidget()
         self.script_tab_widget = QTabWidget()
         self.script_tab_widget.setTabsClosable(True) # Enable close button on each tab
+        
+        self.script_output_window = QTextEdit()
+        self.script_output_window.setReadOnly(True)
+
         self.script_tab_widget.tabCloseRequested.connect(self.on_tab_close_requested) # Connect close button to custom slot
 
         # Create add tab button and set as corner widget
@@ -69,10 +80,12 @@ class AIAssistantUI(QMainWindow):
         self.script_tab_widget.setCornerWidget(self.add_tab_button)
 
         script_main_layout = QVBoxLayout()
+        script_main_layout.addWidget(self.script_output_window)
         script_main_layout.addWidget(self.script_tab_widget)
         self.script_tab.setLayout(script_main_layout)
         self.tab_widget.addTab(self.script_tab, 'Script')
-        self.add_script_tab()
+
+        self.add_script_tab(DEFAULT_SCRIPT)
 
     def on_tab_close_requested(self, index):
         self.script_tab_widget.removeTab(index)  # remove the requested tab
@@ -80,7 +93,7 @@ class AIAssistantUI(QMainWindow):
         if self.script_tab_widget.count() == 0:
             self.add_script_tab()
 
-    def add_script_tab(self):
+    def add_script_tab(self, default_script='', focus=False):
         # Create a new tab for the script tab widget
         self.script_subtab = QWidget()
         script_layout = QVBoxLayout()
@@ -89,23 +102,32 @@ class AIAssistantUI(QMainWindow):
         script_input_text = QPlainTextEdit()
         script_execute_button = QPushButton('Execute')
         # Connect button to the function that executes the script
-        script_execute_button.clicked.connect(lambda: self.execute_script(script_input_text, script_output_window))
-        script_output_window = QTextEdit()
-        script_output_window.setReadOnly(True)
+        script_execute_button.clicked.connect(lambda: self.execute_script(script_input_text, self.script_output_window, auto=True))
 
         # Add the components to the layout
         script_layout.addWidget(script_input_text)
-        script_layout.addWidget(script_output_window)
         script_layout.addWidget(script_execute_button)
 
         # Set the layout for the tab
         self.script_subtab.setLayout(script_layout)
 
         # Add the subtab to the script tab widget
-        self.script_tab_widget.addTab(self.script_subtab, f'Tab {self.script_tab_widget.count() + 1}')
+        new_tab = self.script_tab_widget.addTab(self.script_subtab, f'Tab {self.script_tab_widget.count() + 1}')
+        
+        if focus:
+            self.tab_widget.setCurrentIndex(1)
+            self.script_tab_widget.setCurrentIndex(new_tab)
 
-    def execute_script(self, input_text, output_window):
-        pass
+        # Add default script
+        if default_script:
+            script_input_text.setPlainText(default_script)
+
+    def execute_script(self, input_text, output_window, auto=False):
+        output = gpt_wrapper.ApplicationManager.execute(input_text.toPlainText(), auto)
+
+        output_window.setText(gpt_wrapper.ApplicationManager.script_output)
+            
+        output_window.moveCursor(QTextCursor.End) 
 
     def build_customize_tab(self):
         self.customize_tab = QWidget()
@@ -155,7 +177,6 @@ class AIAssistantUI(QMainWindow):
 
     def load_personality(self, personality_name):
         personality = gpt_wrapper.ApplicationManager.get_entity_personality_by_name(personality_name)
-        print(f"Changed ai instance to: {personality['name']}")
         gpt_wrapper.ApplicationManager.chat_environment.ai_instances = [gpt_wrapper.AIInstance(personality)]
 
 
